@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Sort_Direction__c</fullName>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <label>Sort Direction</label>
+    <description>ASC or DESC. Defaults to ASC (oldest first).</description>
+    <type>Text</type>
+    <length>4</length>
+</CustomField>

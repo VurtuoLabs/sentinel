@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Sentinel_HealthCheck</fullName>
+    <label>Sentinel Health Check</label>
+    <description>Flow-fronted wrapper over the SentinelHealthCheck invocable Apex. Gives the agent a reliable flow:// target. Holds no logic of its own.</description>
+    <processType>AutoLaunchedFlow</processType>
+    <apiVersion>65.0</apiVersion>
+    <status>Active</status>
+
+    <!-- Inputs -->
+    <variables>
+        <name>objectApiName</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>ownerScope</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+
+    <!-- Outputs (String contract for the agent) -->
+    <variables>
+        <name>staleRecordsJson</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>summaryJson</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>label</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>staleCount</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+
+    <!-- Private: raw integer count from Apex -->
+    <variables>
+        <name>apexStaleCount</name>
+        <dataType>Number</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <scale>0</scale>
+    </variables>
+
+    <actionCalls>
+        <name>Run_Health_Check</name>
+        <label>Run Health Check</label>
+        <locationX>176</locationX>
+        <locationY>158</locationY>
+        <actionName>SentinelHealthCheck</actionName>
+        <actionType>apex</actionType>
+        <connector>
+            <targetReference>Set_Outputs</targetReference>
+        </connector>
+        <inputParameters>
+            <name>objectApiName</name>
+            <value>
+                <elementReference>objectApiName</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>ownerScope</name>
+            <value>
+                <elementReference>ownerScope</elementReference>
+            </value>
+        </inputParameters>
+        <outputParameters>
+            <assignToReference>staleRecordsJson</assignToReference>
+            <name>staleRecordsJson</name>
+        </outputParameters>
+        <outputParameters>
+            <assignToReference>summaryJson</assignToReference>
+            <name>summaryJson</name>
+        </outputParameters>
+        <outputParameters>
+            <assignToReference>label</assignToReference>
+            <name>label</name>
+        </outputParameters>
+        <outputParameters>
+            <assignToReference>apexStaleCount</assignToReference>
+            <name>staleCount</name>
+        </outputParameters>
+    </actionCalls>
+
+    <formulas>
+        <name>Count_As_Text</name>
+        <dataType>String</dataType>
+        <expression>TEXT({!apexStaleCount})</expression>
+    </formulas>
+
+    <assignments>
+        <name>Set_Outputs</name>
+        <label>Set Outputs</label>
+        <locationX>176</locationX>
+        <locationY>278</locationY>
+        <assignmentItems>
+            <assignToReference>staleCount</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>Count_As_Text</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Run_Health_Check</targetReference>
+        </connector>
+    </start>
+</Flow>

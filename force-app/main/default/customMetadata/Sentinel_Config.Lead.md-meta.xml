@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Working Leads</label>
+    <protected>false</protected>
+    <values>
+        <field>Object_API_Name__c</field>
+        <value xsi:type="xsd:string">Lead</value>
+    </values>
+    <values>
+        <field>Date_Field__c</field>
+        <value xsi:type="xsd:string">LastActivityDate</value>
+    </values>
+    <values>
+        <field>Stale_Days__c</field>
+        <value xsi:type="xsd:double">10.0</value>
+    </values>
+    <values>
+        <field>Owner_Field__c</field>
+        <value xsi:type="xsd:string">OwnerId</value>
+    </values>
+    <values>
+        <field>Priority_Field__c</field>
+        <value xsi:type="xsd:string">Status</value>
+    </values>
+    <values>
+        <field>Name_Field__c</field>
+        <value xsi:type="xsd:string">Name</value>
+    </values>
+    <values>
+        <field>Filter_Criteria__c</field>
+        <value xsi:type="xsd:string">IsConverted = false</value>
+    </values>
+    <values>
+        <field>Sort_Direction__c</field>
+        <value xsi:type="xsd:string">ASC</value>
+    </values>
+    <values>
+        <field>Threshold_Alert__c</field>
+        <value xsi:type="xsd:double">40.0</value>
+    </values>
+    <values>
+        <field>Is_Active__c</field>
+        <value xsi:type="xsd:boolean">true</value>
+    </values>
+    <values>
+        <field>Label__c</field>
+        <value xsi:type="xsd:string">Working Leads</value>
+    </values>
+</CustomMetadata>

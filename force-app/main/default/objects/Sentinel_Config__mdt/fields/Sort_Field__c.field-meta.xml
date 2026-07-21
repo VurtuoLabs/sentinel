@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Sort_Field__c</fullName>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <label>Sort Field</label>
+    <description>Optional field to order results by. Defaults to the Date Field (oldest first).</description>
+    <type>Text</type>
+    <length>255</length>
+</CustomField>

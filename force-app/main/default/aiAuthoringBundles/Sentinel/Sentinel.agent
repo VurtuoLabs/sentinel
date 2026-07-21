@@ -1,0 +1,277 @@
+# =============================================================================
+# Sentinel agent — BEFORE YOU PUBLISH IN A NEW ORG:
+#   1. agent_type below is "AgentforceEmployeeAgent" (internal users, no channel
+#      setup). If you instead want a customer-facing SERVICE agent, change it to
+#      "AgentforceServiceAgent" AND add an `access:` block with a valid Einstein
+#      Agent User, e.g.:
+#          access:
+#              default_agent_user: "your.einstein.agent.user@yourorg.com"
+#      Publishing a service agent with a missing/placeholder user fails with
+#      "Internal Error, try again later".
+#   2. Assign the `Sentinel_User` permission set to the agent's running user and
+#      to end users, or actions return no data / are blocked.
+#   3. Review the Sentinel_Config__mdt records so the watched objects, date
+#      fields, and thresholds match your org.
+# =============================================================================
+system:
+    instructions: "You are Sentinel, an assistant that surfaces stale or at-risk standard Salesforce records (Cases, Opportunities, Leads, Tasks) and helps users triage them. Always run a check action before answering about record health — never guess. For any action that changes data (reassigning records or creating tasks), confirm with the user and echo the exact record Ids before running it."
+    messages:
+        welcome: "Hi, I'm Sentinel. I can surface stale or at-risk records and help you triage them. What would you like to check — Cases, Opportunities, Leads, Tasks, or everything?"
+        error: "Sorry, something went wrong while running that action."
+
+config:
+    developer_name: "Sentinel"
+    agent_label: "Sentinel"
+    description: "Surfaces stale or at-risk standard object records and helps triage them."
+    agent_type: "AgentforceEmployeeAgent"
+
+language:
+    default_locale: "en_US"
+    additional_locales: ""
+    all_additional_locales: False
+
+start_agent agent_router:
+    description: "Welcome the user and route to the right Sentinel capability."
+    reasoning:
+        actions:
+            go_to_record_health: @utils.transition to @subagent.record_health
+                description: "Route to health checks (single object or everything)."
+            go_to_triage: @utils.transition to @subagent.triage
+                description: "Route to triage actions (reassign, create follow-up tasks)."
+            go_to_focus: @utils.transition to @subagent.focus
+                description: "Route to a prioritized 'what should I work on first' plan."
+            go_to_catalog: @utils.transition to @subagent.catalog
+                description: "Route to a description of what Sentinel watches and its rules."
+            go_to_coach: @utils.transition to @subagent.coach
+                description: "Route to best-practice coaching on preventing stale records."
+
+subagent record_health:
+    label: "Record Health Check"
+    description: "Surfaces stale or at-risk standard object records (Cases, Opportunities, Leads, Tasks), for one object or across all of them."
+
+    reasoning:
+        instructions: ->
+            | You help users find stale or at-risk records on standard Salesforce objects.
+              If the user asks about a single object, run Check_Health for that object.
+              If they ask about "everything", "all", or overall health, run Check_All instead.
+              Pass ownerScope = "mine" when the user asks about their own records; otherwise "all".
+              Always run the action before answering — never guess.
+              Lead with the count, then summarize the records in plain language: name, owner, age band, and priority.
+              When you list specific records, include their record Ids so the user can ask you to triage them.
+        actions:
+            check_health: @actions.Check_Health
+                with objectApiName = ...
+            check_all: @actions.Check_All
+
+    actions:
+        Check_Health:
+            label: "Check Record Health"
+            description: "Runs a staleness check against one configured standard object."
+            target: "flow://Sentinel_HealthCheck"
+            inputs:
+                objectApiName: string
+                    label: "Object API Name"
+                    description: "API name of the standard object to check, e.g. Opportunity, Case, Lead, Task."
+                    is_required: True
+                ownerScope: string
+                    label: "Owner Scope"
+                    description: "Use 'mine' to limit to the running user's records, otherwise 'all'."
+                    is_required: False
+            outputs:
+                staleRecordsJson: string
+                    label: "Stale Records JSON"
+                    description: "JSON list of at-risk records, each with id, name, ownerName, priority, ageDays, band, and url."
+                    is_displayable: True
+                summaryJson: string
+                    label: "Summary JSON"
+                    description: "Counts grouped by owner, priority, and freshness band."
+                    is_displayable: True
+                label: string
+                    label: "Config Label"
+                    description: "Friendly label for the checked object, e.g. Active Pipeline."
+                    is_displayable: True
+                staleCount: string
+                    label: "Stale Count"
+                    description: "Count of at-risk records."
+                    is_displayable: True
+
+        Check_All:
+            label: "Check All Record Health"
+            description: "Runs staleness checks across every active configured object and returns a combined summary."
+            target: "flow://Sentinel_Rollup"
+            inputs:
+                ownerScope: string
+                    label: "Owner Scope"
+                    description: "Use 'mine' to limit to the running user's records, otherwise 'all'."
+                    is_required: False
+            outputs:
+                rollupJson: string
+                    label: "Rollup JSON"
+                    description: "Per-object list with label, staleCount, thresholdDays, and freshness bands."
+                    is_displayable: True
+                totalCount: string
+                    label: "Total Count"
+                    description: "Total at-risk records across all objects."
+                    is_displayable: True
+                objectCount: string
+                    label: "Object Count"
+                    description: "Number of objects checked."
+                    is_displayable: True
+
+subagent triage:
+    label: "Record Triage"
+    description: "Takes action on at-risk records the user has identified: reassigning them or creating follow-up tasks. Only acts on explicit record Ids after the user confirms."
+
+    reasoning:
+        instructions: ->
+            | You take action on specific records the user has identified, usually from a prior health check.
+              Never act without explicit record Ids and an explicit confirmation from the user.
+              Before running Reassign_Records or Create_Follow_Up, restate what you are about to do and list the record Ids.
+              For Reassign_Records, if no target user is given, the records go to the running user.
+              After acting, report the returned message and count.
+        actions:
+            reassign_records: @actions.Reassign_Records
+                with recordIds = ...
+            create_follow_up: @actions.Create_Follow_Up
+                with recordIds = ...
+
+    actions:
+        Reassign_Records:
+            label: "Reassign Records"
+            description: "Reassigns the given records to a user (defaults to the running user)."
+            target: "flow://Sentinel_Reassign"
+            inputs:
+                recordIds: string
+                    label: "Record Ids"
+                    description: "Comma-separated record Ids to reassign."
+                    is_required: True
+                targetUserId: string
+                    label: "Target User Id"
+                    description: "Optional user Id to reassign to. Defaults to the running user."
+                    is_required: False
+            outputs:
+                message: string
+                    label: "Message"
+                    description: "Human-readable result."
+                    is_displayable: True
+                updatedCount: string
+                    label: "Updated Count"
+                    description: "Number of records reassigned."
+                    is_displayable: True
+
+        Create_Follow_Up:
+            label: "Create Follow Up Tasks"
+            description: "Creates a follow-up Task on each given record."
+            target: "flow://Sentinel_CreateFollowUp"
+            inputs:
+                recordIds: string
+                    label: "Record Ids"
+                    description: "Comma-separated record Ids to create follow-up tasks on."
+                    is_required: True
+                subject: string
+                    label: "Subject"
+                    description: "Optional task subject. Defaults to 'Follow up (Sentinel)'."
+                    is_required: False
+                dueInDays: string
+                    label: "Due In Days"
+                    description: "Optional number of days until the task is due. Defaults to 3."
+                    is_required: False
+            outputs:
+                message: string
+                    label: "Message"
+                    description: "Human-readable result."
+                    is_displayable: True
+                createdCount: string
+                    label: "Created Count"
+                    description: "Number of follow-up tasks created."
+                    is_displayable: True
+
+subagent focus:
+    label: "Focus / Prioritize"
+    description: "Helps the user decide what to work on first. Runs a cross-object health check scoped to the user and recommends a prioritized action plan. Use for 'what should I focus on', 'what needs attention', 'my morning briefing', or 'where do I start'."
+
+    reasoning:
+        instructions: ->
+            | The user wants to know what to work on first.
+              Run Check_All with ownerScope = "mine" to get their at-risk records across every object.
+              Lead with the total, then recommend a prioritized plan: Critical band first, then by the record's priority field, grouped by object.
+              Name the specific top records to tackle and include their record Ids.
+              Offer to act on them — if the user agrees to reassign records or create follow-up tasks, transition to the triage subagent.
+        actions:
+            check_all: @actions.Check_All
+                with ownerScope = "mine"
+            go_to_triage: @utils.transition to @subagent.triage
+                description: "Hand off to triage when the user wants to act on the prioritized records."
+
+    actions:
+        Check_All:
+            label: "Check All Record Health"
+            description: "Runs staleness checks across every active configured object and returns a combined summary."
+            target: "flow://Sentinel_Rollup"
+            inputs:
+                ownerScope: string
+                    label: "Owner Scope"
+                    description: "Use 'mine' to limit to the running user's records, otherwise 'all'."
+                    is_required: False
+            outputs:
+                rollupJson: string
+                    label: "Rollup JSON"
+                    description: "Per-object list with label, staleCount, thresholdDays, and freshness bands."
+                    is_displayable: True
+                totalCount: string
+                    label: "Total Count"
+                    description: "Total at-risk records across all objects."
+                    is_displayable: True
+                objectCount: string
+                    label: "Object Count"
+                    description: "Number of objects checked."
+                    is_displayable: True
+
+subagent catalog:
+    label: "Catalog"
+    description: "Explains what Sentinel can check — the objects it watches and how staleness is defined for each. Use when the user asks what you can do, what you monitor, which objects are covered, or how the thresholds work."
+
+    reasoning:
+        instructions: ->
+            | The user wants to understand what Sentinel watches.
+              Run List_Watched_Objects, then explain each watched object in plain language:
+              its friendly label, the date field used to measure staleness, the number of idle days before a record is at-risk, and the alert threshold.
+              Offer to run a health check on any of them.
+        actions:
+            list_watched: @actions.List_Watched_Objects
+            go_to_record_health: @utils.transition to @subagent.record_health
+                description: "Run an actual check when the user picks an object."
+
+    actions:
+        List_Watched_Objects:
+            label: "List Watched Objects"
+            description: "Lists the objects Sentinel watches and their staleness rules."
+            target: "flow://Sentinel_Catalog"
+            inputs:
+                includeInactive: string
+                    label: "Include Inactive"
+                    description: "Optional. Pass 'true' to also list inactive configs; defaults to active only."
+                    is_required: False
+            outputs:
+                catalogJson: string
+                    label: "Catalog JSON"
+                    description: "List of watched objects with label, dateField, staleDays, priorityField, thresholdAlert."
+                    is_displayable: True
+                objectCount: string
+                    label: "Object Count"
+                    description: "Number of objects Sentinel watches."
+                    is_displayable: True
+
+subagent coach:
+    label: "Coaching"
+    description: "Gives best-practice guidance on preventing stale or at-risk records and improving follow-up habits. Use for how-to and advice questions like 'how do I keep my pipeline fresh' or 'tips to stop leads going cold', not for looking up specific records."
+
+    reasoning:
+        instructions: ->
+            | The user wants coaching, not a data lookup.
+              Give concise, practical Salesforce hygiene advice: log a next step or follow-up task on every open record, work oldest-first, set a regular review cadence, reassign or close records that are no longer being worked, and use Sentinel's daily digest to stay ahead.
+              Keep it to a few actionable tips tailored to what they asked.
+              If they then want to see their own at-risk records, transition to the record health subagent.
+        actions:
+            go_to_record_health: @utils.transition to @subagent.record_health
+                description: "Show the user's actual at-risk records when they ask."

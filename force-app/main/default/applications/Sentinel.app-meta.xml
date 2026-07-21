@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Sentinel</label>
+    <description>Record health &amp; at-risk radar.</description>
+    <navType>Standard</navType>
+    <uiType>Lightning</uiType>
+    <formFactors>Large</formFactors>
+    <brand>
+        <headerColor>#6A2FE0</headerColor>
+        <shouldOverrideOrgTheme>true</shouldOverrideOrgTheme>
+    </brand>
+    <tabs>Sentinel_Dashboard</tabs>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+</CustomApplication>

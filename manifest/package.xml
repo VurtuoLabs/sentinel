@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sentinel deploy manifest.
+
+  ⚠️  BEFORE DEPLOYING TO A NEW ORG, configure these (see README "Before you deploy"):
+    1. Agent user  — Sentinel ships as an Employee Agent (no default user needed).
+                     If you switch it to a Service agent, set access.default_agent_user
+                     in aiAuthoringBundles/Sentinel/Sentinel.agent to a real Einstein
+                     Agent User, or publish fails.
+    2. Config records — review customMetadata/Sentinel_Config.*.md-meta.xml so the
+                     watched objects, date fields, and thresholds match your org.
+    3. Permission set — assign Sentinel_User to the agent's running user AND end users.
+
+  Note: the AiAuthoringBundle deploys as an editable DRAFT. Publish + activate the
+  agent separately (sf agent publish/activate, or in Agentforce Studio).
+-->
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>Sentinel_Config__mdt</members>
+        <name>CustomObject</name>
+    </types>
+    <types>
+        <members>Sentinel_Config.Case</members>
+        <members>Sentinel_Config.Lead</members>
+        <members>Sentinel_Config.Opportunity</members>
+        <members>Sentinel_Config.Task</members>
+        <name>CustomMetadata</name>
+    </types>
+    <types>
+        <members>SentinelService</members>
+        <members>SentinelHealthCheck</members>
+        <members>SentinelRollupAction</members>
+        <members>SentinelReassignAction</members>
+        <members>SentinelFollowUpAction</members>
+        <members>SentinelCatalogAction</members>
+        <members>SentinelDashboardController</members>
+        <members>SentinelMonitor</members>
+        <members>SentinelTest</members>
+        <name>ApexClass</name>
+    </types>
+    <types>
+        <members>Sentinel_HealthCheck</members>
+        <members>Sentinel_Rollup</members>
+        <members>Sentinel_Reassign</members>
+        <members>Sentinel_CreateFollowUp</members>
+        <members>Sentinel_Catalog</members>
+        <name>Flow</name>
+    </types>
+    <types>
+        <members>Sentinel_Alert</members>
+        <name>CustomNotificationType</name>
+    </types>
+    <types>
+        <members>sentinelDashboard</members>
+        <members>sentinelStatCard</members>
+        <name>LightningComponentBundle</name>
+    </types>
+    <types>
+        <members>Sentinel_Dashboard</members>
+        <name>FlexiPage</name>
+    </types>
+    <types>
+        <members>Sentinel_Dashboard</members>
+        <name>CustomTab</name>
+    </types>
+    <types>
+        <members>Sentinel</members>
+        <name>CustomApplication</name>
+    </types>
+    <types>
+        <members>Sentinel_User</members>
+        <name>PermissionSet</name>
+    </types>
+    <types>
+        <members>Sentinel</members>
+        <name>AiAuthoringBundle</name>
+    </types>
+    <version>65.0</version>
+</Package>

@@ -1,0 +1,39 @@
+<template>
+    <article class={card.cardClass} style={card.delayStyle}>
+        <div class={card.accentClass}></div>
+
+        <header class="sc-head">
+            <div class="sc-head__text">
+                <h2 class="sc-label">{card.label}</h2>
+                <span class="sc-object">{card.objectApiName}</span>
+            </div>
+            <div class="sc-count">
+                <span class="sc-count__num">{card.staleCount}</span>
+                <span class="sc-count__cap">at-risk</span>
+            </div>
+        </header>
+
+        <div class="sc-bar" title="Freshness bands">
+            <div class="sc-seg sc-seg--aging" style={card.agingStyle}></div>
+            <div class="sc-seg sc-seg--stale" style={card.staleStyle}></div>
+            <div class="sc-seg sc-seg--critical" style={card.criticalStyle}></div>
+        </div>
+
+        <div class="sc-legend">
+            <span class="sc-chip sc-chip--aging"><i></i>Aging {card.aging}</span>
+            <span class="sc-chip sc-chip--stale"><i></i>Stale {card.stale}</span>
+            <span class="sc-chip sc-chip--critical"><i></i>Critical {card.critical}</span>
+        </div>
+
+        <footer class="sc-foot">
+            <span class="sc-threshold">&gt; {card.thresholdDays}d idle</span>
+            <template if:true={hasOwners}>
+                <div class="sc-owners">
+                    <template for:each={card.owners} for:item="o">
+                        <span key={o.key} class="sc-owner">{o.key} · {o.count}</span>
+                    </template>
+                </div>
+            </template>
+        </footer>
+    </article>
+</template>

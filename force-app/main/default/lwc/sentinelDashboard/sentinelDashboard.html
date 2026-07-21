@@ -1,0 +1,69 @@
+<template>
+    <div class="sen-root">
+        <!-- Header -->
+        <div class="sen-header">
+            <div class="sen-header__glow"></div>
+            <div class="sen-header__titles">
+                <div class="sen-badge">◎ SENTINEL</div>
+                <h1 class="sen-title">Record Health Radar</h1>
+                <p class="sen-subtitle">Stale &amp; at-risk records across every watched object</p>
+            </div>
+            <div class="sen-controls">
+                <div class="sen-toggle">
+                    <button class={allBtnClass} onclick={handleAll}>All</button>
+                    <button class={mineBtnClass} onclick={handleMine}>Mine</button>
+                </div>
+                <button class="sen-refresh" onclick={handleRefresh} title="Refresh">
+                    <lightning-icon icon-name="utility:refresh" size="x-small" variant="inverse"></lightning-icon>
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <template if:true={loading}>
+            <div class="sen-state">
+                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+            </div>
+        </template>
+
+        <!-- Error -->
+        <template if:true={error}>
+            <div class="sen-error">
+                <lightning-icon icon-name="utility:warning" size="small" variant="error"></lightning-icon>
+                <span>{errorMessage}</span>
+            </div>
+        </template>
+
+        <!-- Data -->
+        <template if:true={hasData}>
+            <div class="sen-kpis">
+                <div class="sen-kpi sen-kpi--total">
+                    <span class="sen-kpi__num">{total}</span>
+                    <span class="sen-kpi__label">Records at-risk</span>
+                </div>
+                <div class="sen-kpi sen-kpi--critical">
+                    <span class="sen-kpi__num">{criticalTotal}</span>
+                    <span class="sen-kpi__label">Critical</span>
+                </div>
+                <div class="sen-kpi sen-kpi--objects">
+                    <span class="sen-kpi__num">{objectCount}</span>
+                    <span class="sen-kpi__label">Objects watched</span>
+                </div>
+            </div>
+
+            <div class="sen-grid">
+                <template for:each={cards} for:item="card">
+                    <c-sentinel-stat-card key={card.key} card={card}></c-sentinel-stat-card>
+                </template>
+            </div>
+        </template>
+
+        <!-- Empty -->
+        <template if:true={showEmpty}>
+            <div class="sen-empty">
+                <div class="sen-empty__icon">✓</div>
+                <p>All clear — no active configs returned at-risk records.</p>
+            </div>
+        </template>
+    </div>
+</template>
