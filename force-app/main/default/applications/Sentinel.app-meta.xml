@@ -10,5 +10,11 @@
         <shouldOverrideOrgTheme>true</shouldOverrideOrgTheme>
     </brand>
     <tabs>Sentinel_Dashboard</tabs>
+    <tabs>Sentinel_Trends</tabs>
+    <tabs>Sentinel_Leaderboard</tabs>
+    <tabs>Sentinel_Snoozed</tabs>
+    <tabs>Sentinel_PipelineValue</tabs>
+    <tabs>Sentinel_SingleThreaded</tabs>
+    <tabs>Sentinel_ActivityGaps</tabs>
     <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
 </CustomApplication>

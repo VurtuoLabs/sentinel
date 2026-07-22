@@ -1,0 +1,62 @@
+<template>
+    <div class="pv-root">
+        <div class="pv-header">
+            <div>
+                <div class="pv-badge">◎ SENTINEL</div>
+                <h1 class="pv-title">Pipeline Value at Risk</h1>
+                <p class="pv-subtitle">Dollar-weighted view of stale and Critical Opportunities</p>
+            </div>
+            <button class="pv-refresh" onclick={handleRefresh} title="Refresh">
+                <lightning-icon icon-name="utility:refresh" size="x-small"></lightning-icon>
+            </button>
+        </div>
+
+        <template if:true={loading}>
+            <div class="pv-state">
+                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+            </div>
+        </template>
+
+        <template if:true={error}>
+            <div class="pv-error">
+                <lightning-icon icon-name="utility:warning" size="small" variant="error"></lightning-icon>
+                <span>{errorMessage}</span>
+            </div>
+        </template>
+
+        <template if:true={hasData}>
+            <div class="pv-kpis">
+                <div class="pv-kpi pv-kpi--total">
+                    <span class="pv-kpi__num">{totalFormatted}</span>
+                    <span class="pv-kpi__label">Total at-risk</span>
+                </div>
+                <div class="pv-kpi pv-kpi--critical">
+                    <span class="pv-kpi__num">{criticalFormatted}</span>
+                    <span class="pv-kpi__label">Critical</span>
+                </div>
+                <div class="pv-kpi pv-kpi--stale">
+                    <span class="pv-kpi__num">{staleFormatted}</span>
+                    <span class="pv-kpi__label">Stale</span>
+                </div>
+                <div class="pv-kpi pv-kpi--aging">
+                    <span class="pv-kpi__num">{agingFormatted}</span>
+                    <span class="pv-kpi__label">Aging</span>
+                </div>
+            </div>
+
+            <div class="pv-card">
+                <h2 class="pv-card__title">By stage</h2>
+                <template for:each={stageRows} for:item="row">
+                    <div class="pv-row" key={row.key}>
+                        <span class="pv-stage">{row.stage}</span>
+                        <div class="pv-bar-track">
+                            <div class="pv-bar" style={row.barStyle}></div>
+                        </div>
+                        <span class="pv-amount">{row.amountFormatted}</span>
+                        <span class="pv-count">{row.count} deals</span>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </div>
+</template>

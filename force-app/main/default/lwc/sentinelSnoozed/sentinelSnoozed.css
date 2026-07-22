@@ -1,0 +1,104 @@
+:host {
+    display: block;
+}
+.sz-root {
+    font-family: 'Salesforce Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    padding: 0.5rem;
+}
+.sz-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #ffffff;
+    border: 1px solid rgba(120, 120, 160, 0.10);
+    border-radius: 22px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 10px 26px rgba(23, 20, 61, 0.10), 0 2px 6px rgba(23, 20, 61, 0.06);
+    margin-bottom: 1rem;
+}
+.sz-badge {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    color: #6a5cff;
+    background: rgba(106, 92, 255, 0.10);
+    padding: 0.25rem 0.7rem;
+    border-radius: 999px;
+    margin-bottom: 0.5rem;
+}
+.sz-title { font-size: 1.5rem; font-weight: 800; color: #1b1b33; margin: 0; }
+.sz-subtitle { font-size: 0.85rem; color: #6b6b85; margin: 0.25rem 0 0; }
+.sz-refresh {
+    border: none;
+    background: #f4f5fa;
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.4s ease, background 0.2s ease;
+}
+.sz-refresh:hover { background: #eceefc; transform: rotate(180deg); }
+
+.sz-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+.sz-card {
+    background: #ffffff;
+    border: 1px solid rgba(120, 120, 160, 0.10);
+    border-radius: 18px;
+    padding: 1rem 1.15rem;
+    box-shadow: 0 10px 26px rgba(23, 20, 61, 0.08), 0 2px 6px rgba(23, 20, 61, 0.05);
+}
+.sz-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
+.sz-name { font-size: 1rem; font-weight: 700; color: #1b1b33; }
+.sz-object {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #8a8aa6;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.sz-reason {
+    font-size: 0.85rem;
+    color: #4a4a63;
+    margin: 0.5rem 0 0.85rem;
+    font-style: italic;
+}
+.sz-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    border-top: 1px dashed rgba(120, 120, 160, 0.20);
+    padding-top: 0.6rem;
+}
+.sz-by { font-size: 0.72rem; color: #6b6b85; }
+.sz-days {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #6a5cff;
+    background: rgba(106, 92, 255, 0.10);
+    padding: 0.15rem 0.55rem;
+    border-radius: 8px;
+    white-space: nowrap;
+}
+.sz-days--soon { color: #e02020; background: rgba(224, 32, 32, 0.10); }
+
+.sz-state { min-height: 160px; position: relative; }
+.sz-error {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #fff1f1;
+    color: #b3261e;
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+}
+.sz-empty { text-align: center; padding: 2rem; color: #6b6b85; }

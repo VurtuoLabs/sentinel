@@ -34,7 +34,8 @@ public with sharing class SentinelRollupAction {
                 'staleCount' => rep.staleCount,
                 'thresholdDays' => rep.thresholdDays,
                 'byBand' => rep.summary.byBand,
-                'topOwners' => rep.summary.byOwner
+                'topOwners' => rep.summary.byOwner,
+                'records' => rep.records
             });
         }
 

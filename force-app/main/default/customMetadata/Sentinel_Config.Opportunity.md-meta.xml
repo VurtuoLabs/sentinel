@@ -50,4 +50,8 @@
         <field>Label__c</field>
         <value xsi:type="xsd:string">Active Pipeline</value>
     </values>
+    <values>
+        <field>Amount_Field__c</field>
+        <value xsi:type="xsd:string">Amount</value>
+    </values>
 </CustomMetadata>

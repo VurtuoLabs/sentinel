@@ -1,0 +1,48 @@
+<template>
+    <div class="lb-root">
+        <div class="lb-header">
+            <div>
+                <div class="lb-badge">◎ SENTINEL</div>
+                <h1 class="lb-title">Team Rollup</h1>
+                <p class="lb-subtitle">At-risk records grouped by owner, across every watched object</p>
+            </div>
+            <button class="lb-refresh" onclick={handleRefresh} title="Refresh">
+                <lightning-icon icon-name="utility:refresh" size="x-small"></lightning-icon>
+            </button>
+        </div>
+
+        <template if:true={loading}>
+            <div class="lb-state">
+                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+            </div>
+        </template>
+
+        <template if:true={error}>
+            <div class="lb-error">
+                <lightning-icon icon-name="utility:warning" size="small" variant="error"></lightning-icon>
+                <span>{errorMessage}</span>
+            </div>
+        </template>
+
+        <template if:true={hasData}>
+            <div class="lb-card">
+                <div class="lb-list">
+                    <template for:each={rows} for:item="row">
+                        <div class="lb-row" key={row.key}>
+                            <span class="lb-rank">{row.rank}</span>
+                            <span class="lb-owner">{row.owner}</span>
+                            <div class="lb-bar-track">
+                                <div class="lb-bar" style={row.barStyle}></div>
+                            </div>
+                            <span class="lb-count">{row.count}</span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </template>
+
+        <template if:true={showEmpty}>
+            <div class="lb-empty">All clear — no at-risk records for any owner.</div>
+        </template>
+    </div>
+</template>

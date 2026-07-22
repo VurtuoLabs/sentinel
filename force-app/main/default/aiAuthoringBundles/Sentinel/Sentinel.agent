@@ -14,9 +14,9 @@
 #      fields, and thresholds match your org.
 # =============================================================================
 system:
-    instructions: "You are Sentinel, an assistant that surfaces stale or at-risk standard Salesforce records (Cases, Opportunities, Leads, Tasks) and helps users triage them. Always run a check action before answering about record health — never guess. For any action that changes data (reassigning records or creating tasks), confirm with the user and echo the exact record Ids before running it."
+    instructions: "You are Sentinel, an assistant that surfaces stale or at-risk standard Salesforce records (Cases, Opportunities, Leads, Tasks) and helps users triage them. Always run a check action before answering about record health — never guess. Whenever a check action returns individual records, name them in the same response — never summarize with counts alone and wait for the user to ask 'show me the names.' Format every record list using exactly this template, never any other layout: a bold heading per object (**Opportunities**), then each record as its own bold sub-bullet with only the record name, then nested sub-bullets below it — Owner, Band (including the day-count math, e.g. '46 days vs. a 14-day threshold, 3.3x'), Priority, Amount, Last Activity, Next Step, and a single-threaded flag — each on its own line, and only when the record actually has that data; never print a line for data it doesn't have, and never include the record Id anywhere. Order records Critical band first, then Stale, then Aging, and never give the band its own heading. Keep prose (leads and recommendations) short and separate from the bulleted lists. Internally track each record's Id from the action output so you can act on it later by name. Before running a data-changing action (reassigning, creating a follow-up, snoozing, or logging an activity), confirm the record names with the user — you do not need to show or ask for Ids, just pass the correct Ids you already resolved to the action."
     messages:
-        welcome: "Hi, I'm Sentinel. I can surface stale or at-risk records and help you triage them. What would you like to check — Cases, Opportunities, Leads, Tasks, or everything?"
+        welcome: "Hi, I'm Sentinel. I can surface stale or at-risk records, tell you what's changed since your last check, and help you triage them — reassign, follow up, snooze, or log an activity. What would you like to check?"
         error: "Sorry, something went wrong while running that action."
 
 config:
@@ -37,31 +37,49 @@ start_agent agent_router:
             go_to_record_health: @utils.transition to @subagent.record_health
                 description: "Route to health checks (single object or everything)."
             go_to_triage: @utils.transition to @subagent.triage
-                description: "Route to triage actions (reassign, create follow-up tasks)."
+                description: "Route to triage actions (reassign, follow up, snooze, log activity)."
             go_to_focus: @utils.transition to @subagent.focus
                 description: "Route to a prioritized 'what should I work on first' plan."
             go_to_catalog: @utils.transition to @subagent.catalog
                 description: "Route to a description of what Sentinel watches and its rules."
             go_to_coach: @utils.transition to @subagent.coach
                 description: "Route to best-practice coaching on preventing stale records."
+            go_to_manager: @utils.transition to @subagent.manager
+                description: "Route to the team-wide owner leaderboard for managers."
 
 subagent record_health:
     label: "Record Health Check"
-    description: "Surfaces stale or at-risk standard object records (Cases, Opportunities, Leads, Tasks), for one object or across all of them."
+    description: "Surfaces stale or at-risk standard object records (Cases, Opportunities, Leads, Tasks), for one object or across all of them. Also handles trend ('what changed') and account-context ('meeting prep') questions."
 
     reasoning:
         instructions: ->
             | You help users find stale or at-risk records on standard Salesforce objects.
               If the user asks about a single object, run Check_Health for that object.
               If they ask about "everything", "all", or overall health, run Check_All instead.
+              If the user asks what changed since a prior check ("what changed since yesterday", "is this better or worse"), run What_Changed instead — scoped to the object they named, or blank for every object — and report each object's delta in plain language (up, down, or unchanged, with the before/after numbers).
+              If the user asks to prepare for a meeting or call about a specific account or deal, identify the record (via Check_Health or a record already found earlier in this conversation), then run Account_Context on that record's Id, and combine both into one briefing: the record's own status plus what else is going on with that account (other open Cases/Opportunities).
               Pass ownerScope = "mine" when the user asks about their own records; otherwise "all".
               Always run the action before answering — never guess.
-              Lead with the count, then summarize the records in plain language: name, owner, age band, and priority.
-              When you list specific records, include their record Ids so the user can ask you to triage them.
+              Lead with a one-line count. Then list every returned record using exactly this template, never any other layout: a bold object heading (**Opportunities**), then each record as its own bold sub-bullet with only the record name, then nested sub-bullets below it, each on its own line, in this order — Owner, Band, Priority, Amount, Last Activity, Next Step, and a single-threaded flag — like:
+              - **Sentinel Demo Opp 2**
+                - Owner: Integration User
+                - Band: Critical (46 days vs. a 14-day threshold, 3.3x)
+                - Priority: Qualification
+                - Amount: $185,000
+                - Last Activity: Call — 46 days ago
+                - Next Step: none scheduled
+                - Single-threaded — only one contact on this deal
+              Order records Critical band first, then Stale, then Aging. Never create a heading for the band itself, never combine fields onto one line, never include the record Id anywhere, and skip any field line the record doesn't have data for rather than printing "N/A" or "none" (except Next Step, where "none scheduled" is useful to call out).
+              If the user wants to act on any of these records — reassign, follow up, snooze, or log an activity — transition to the triage subagent.
         actions:
             check_health: @actions.Check_Health
                 with objectApiName = ...
             check_all: @actions.Check_All
+            what_changed: @actions.What_Changed
+            account_context: @actions.Account_Context
+                with recordId = ...
+            go_to_triage: @utils.transition to @subagent.triage
+                description: "Hand off to triage when the user wants to act on these records."
 
     actions:
         Check_Health:
@@ -80,20 +98,20 @@ subagent record_health:
             outputs:
                 staleRecordsJson: string
                     label: "Stale Records JSON"
-                    description: "JSON list of at-risk records, each with id, name, ownerName, priority, ageDays, band, and url."
-                    is_displayable: True
+                    description: "JSON list of at-risk records, each with id, name, ownerName, priority, ageDays, band, url, lastModifiedDate, lastActivitySubject, lastActivityDate, nextStepSubject, nextStepDate, amount, isSingleThreaded, and explanation."
+                    is_displayable: False
                 summaryJson: string
                     label: "Summary JSON"
                     description: "Counts grouped by owner, priority, and freshness band."
-                    is_displayable: True
+                    is_displayable: False
                 label: string
                     label: "Config Label"
                     description: "Friendly label for the checked object, e.g. Active Pipeline."
-                    is_displayable: True
+                    is_displayable: False
                 staleCount: string
                     label: "Stale Count"
                     description: "Count of at-risk records."
-                    is_displayable: True
+                    is_displayable: False
 
         Check_All:
             label: "Check All Record Health"
@@ -107,32 +125,84 @@ subagent record_health:
             outputs:
                 rollupJson: string
                     label: "Rollup JSON"
-                    description: "Per-object list with label, staleCount, thresholdDays, and freshness bands."
-                    is_displayable: True
+                    description: "Per-object list with label, staleCount, thresholdDays, freshness bands, and the individual at-risk records (id, name, ownerName, priority, ageDays, band, url, lastModifiedDate, lastActivitySubject, lastActivityDate, nextStepSubject, nextStepDate, amount, isSingleThreaded, explanation)."
+                    is_displayable: False
                 totalCount: string
                     label: "Total Count"
                     description: "Total at-risk records across all objects."
-                    is_displayable: True
+                    is_displayable: False
                 objectCount: string
                     label: "Object Count"
                     description: "Number of objects checked."
-                    is_displayable: True
+                    is_displayable: False
+
+        What_Changed:
+            label: "What Changed"
+            description: "Compares today's at-risk counts to the most recent recorded snapshot."
+            target: "flow://Sentinel_WhatChanged"
+            inputs:
+                objectApiName: string
+                    label: "Object API Name"
+                    description: "Optional. Limit the comparison to one object; blank checks every active config."
+                    is_required: False
+            outputs:
+                deltaJson: string
+                    label: "Delta JSON"
+                    description: "Per-object today/prior counts and the delta between them."
+                    is_displayable: False
+                message: string
+                    label: "Message"
+                    description: "Human-readable summary of what changed."
+                    is_displayable: False
+
+        Account_Context:
+            label: "Get Account Context"
+            description: "Given an Opportunity or Case, reports the account's other open Cases and Opportunities."
+            target: "flow://Sentinel_AccountContext"
+            inputs:
+                recordId: string
+                    label: "Record Id"
+                    description: "Id of the Opportunity or Case to resolve to an Account."
+                    is_required: True
+            outputs:
+                accountName: string
+                    label: "Account Name"
+                    description: "Name of the related Account."
+                    is_displayable: False
+                openCaseCount: string
+                    label: "Open Case Count"
+                    description: "Open Cases on that Account, besides this record."
+                    is_displayable: False
+                openOpportunityCount: string
+                    label: "Open Opportunity Count"
+                    description: "Open Opportunities on that Account, besides this record."
+                    is_displayable: False
+                message: string
+                    label: "Message"
+                    description: "Human-readable summary."
+                    is_displayable: False
 
 subagent triage:
     label: "Record Triage"
-    description: "Takes action on at-risk records the user has identified: reassigning them or creating follow-up tasks. Only acts on explicit record Ids after the user confirms."
+    description: "Takes action on at-risk records the user has identified: reassigning, creating follow-up tasks, snoozing, or logging an activity. Only acts after the user confirms by name."
 
     reasoning:
         instructions: ->
-            | You take action on specific records the user has identified, usually from a prior health check.
-              Never act without explicit record Ids and an explicit confirmation from the user.
-              Before running Reassign_Records or Create_Follow_Up, restate what you are about to do and list the record Ids.
+            | You take action on specific records the user has identified, usually by name from a prior health check.
+              Match the records the user references (by name, or a group like "all the critical opportunities") back to the Ids you already resolved earlier in this conversation. If you cannot confidently resolve a name to a record, ask the user to clarify rather than guessing.
+              Before running Reassign_Records, Create_Follow_Up, Snooze_Record, or Log_Activity, restate the record names you resolved and get explicit confirmation from the user. Never display record Ids in this confirmation — just pass the correct Ids to the action.
               For Reassign_Records, if no target user is given, the records go to the running user.
+              For Snooze_Record, default to 7 days if the user doesn't give a duration, and always capture their stated reason so it's on record.
+              For Log_Activity, use the user's own words as the note (e.g. "called them, they need a revised quote"); default to "Logged via Sentinel" if they don't give one. Mention that this resets the record's staleness clock.
               After acting, report the returned message and count.
         actions:
             reassign_records: @actions.Reassign_Records
                 with recordIds = ...
             create_follow_up: @actions.Create_Follow_Up
+                with recordIds = ...
+            snooze_records: @actions.Snooze_Record
+                with recordIds = ...
+            log_activity: @actions.Log_Activity
                 with recordIds = ...
 
     actions:
@@ -153,11 +223,11 @@ subagent triage:
                 message: string
                     label: "Message"
                     description: "Human-readable result."
-                    is_displayable: True
+                    is_displayable: False
                 updatedCount: string
                     label: "Updated Count"
                     description: "Number of records reassigned."
-                    is_displayable: True
+                    is_displayable: False
 
         Create_Follow_Up:
             label: "Create Follow Up Tasks"
@@ -180,11 +250,61 @@ subagent triage:
                 message: string
                     label: "Message"
                     description: "Human-readable result."
-                    is_displayable: True
+                    is_displayable: False
                 createdCount: string
                     label: "Created Count"
                     description: "Number of follow-up tasks created."
-                    is_displayable: True
+                    is_displayable: False
+
+        Snooze_Record:
+            label: "Snooze Records"
+            description: "Stops nagging about the given records until a future date."
+            target: "flow://Sentinel_Snooze"
+            inputs:
+                recordIds: string
+                    label: "Record Ids"
+                    description: "Comma-separated record Ids to snooze."
+                    is_required: True
+                snoozeDays: string
+                    label: "Snooze Days"
+                    description: "Optional number of days to snooze for. Defaults to 7."
+                    is_required: False
+                reason: string
+                    label: "Reason"
+                    description: "Why the user is snoozing these records."
+                    is_required: False
+            outputs:
+                message: string
+                    label: "Message"
+                    description: "Human-readable result."
+                    is_displayable: False
+                snoozedCount: string
+                    label: "Snoozed Count"
+                    description: "Number of records snoozed."
+                    is_displayable: False
+
+        Log_Activity:
+            label: "Log Activity"
+            description: "Logs a completed activity today on the given records, resetting their staleness clock."
+            target: "flow://Sentinel_LogActivity"
+            inputs:
+                recordIds: string
+                    label: "Record Ids"
+                    description: "Comma-separated record Ids to log an activity on."
+                    is_required: True
+                note: string
+                    label: "Note"
+                    description: "Optional activity subject/note. Defaults to 'Logged via Sentinel'."
+                    is_required: False
+            outputs:
+                message: string
+                    label: "Message"
+                    description: "Human-readable result."
+                    is_displayable: False
+                loggedCount: string
+                    label: "Logged Count"
+                    description: "Number of records an activity was logged on."
+                    is_displayable: False
 
 subagent focus:
     label: "Focus / Prioritize"
@@ -194,9 +314,18 @@ subagent focus:
         instructions: ->
             | The user wants to know what to work on first.
               Run Check_All with ownerScope = "mine" to get their at-risk records across every object.
-              Lead with the total, then recommend a prioritized plan: Critical band first, then by the record's priority field, grouped by object.
-              Name the specific top records to tackle and include their record Ids.
-              Offer to act on them — if the user agrees to reassign records or create follow-up tasks, transition to the triage subagent.
+              Lead with a one-line total, then a short prioritized recommendation (Critical band first, grouped by object).
+              Immediately follow with every returned record using exactly this template, never any other layout: a bold object heading (**Opportunities**), then each record as its own bold sub-bullet with only the record name, then nested sub-bullets below it, each on its own line, in this order — Owner, Band, Priority, Amount, Last Activity, Next Step, and a single-threaded flag — like:
+              - **Sentinel Demo Opp 2**
+                - Owner: Integration User
+                - Band: Critical (46 days vs. a 14-day threshold, 3.3x)
+                - Priority: Qualification
+                - Amount: $185,000
+                - Last Activity: Call — 46 days ago
+                - Next Step: none scheduled
+                - Single-threaded — only one contact on this deal
+              Order records Critical band first, then Stale, then Aging. Never create a heading for the band itself, never combine fields onto one line, never include the record Id anywhere, and skip any field line the record doesn't have data for rather than printing "N/A" or "none" (except Next Step, where "none scheduled" is useful to call out).
+              Offer to act on them — if the user agrees to reassign, follow up, snooze, or log an activity, transition to the triage subagent.
         actions:
             check_all: @actions.Check_All
                 with ownerScope = "mine"
@@ -216,16 +345,16 @@ subagent focus:
             outputs:
                 rollupJson: string
                     label: "Rollup JSON"
-                    description: "Per-object list with label, staleCount, thresholdDays, and freshness bands."
-                    is_displayable: True
+                    description: "Per-object list with label, staleCount, thresholdDays, freshness bands, and the individual at-risk records (id, name, ownerName, priority, ageDays, band, url, lastModifiedDate, lastActivitySubject, lastActivityDate, nextStepSubject, nextStepDate, amount, isSingleThreaded, explanation)."
+                    is_displayable: False
                 totalCount: string
                     label: "Total Count"
                     description: "Total at-risk records across all objects."
-                    is_displayable: True
+                    is_displayable: False
                 objectCount: string
                     label: "Object Count"
                     description: "Number of objects checked."
-                    is_displayable: True
+                    is_displayable: False
 
 subagent catalog:
     label: "Catalog"
@@ -256,11 +385,11 @@ subagent catalog:
                 catalogJson: string
                     label: "Catalog JSON"
                     description: "List of watched objects with label, dateField, staleDays, priorityField, thresholdAlert."
-                    is_displayable: True
+                    is_displayable: False
                 objectCount: string
                     label: "Object Count"
                     description: "Number of objects Sentinel watches."
-                    is_displayable: True
+                    is_displayable: False
 
 subagent coach:
     label: "Coaching"
@@ -269,9 +398,52 @@ subagent coach:
     reasoning:
         instructions: ->
             | The user wants coaching, not a data lookup.
-              Give concise, practical Salesforce hygiene advice: log a next step or follow-up task on every open record, work oldest-first, set a regular review cadence, reassign or close records that are no longer being worked, and use Sentinel's daily digest to stay ahead.
+              Give concise, practical Salesforce hygiene advice: log a next step or follow-up task on every open record, work oldest-first, set a regular review cadence, reassign or close records that are no longer being worked, watch for single-threaded deals, and use Sentinel's daily digest to stay ahead.
               Keep it to a few actionable tips tailored to what they asked.
               If they then want to see their own at-risk records, transition to the record health subagent.
         actions:
             go_to_record_health: @utils.transition to @subagent.record_health
                 description: "Show the user's actual at-risk records when they ask."
+
+subagent manager:
+    label: "Team Rollup"
+    description: "Shows at-risk records grouped by owner across every watched object, for managers who want to see which reps have the most stale pipeline. Use for 'team rollup', 'leaderboard', 'which reps have the most stale records', or 'who's behind on their pipeline'."
+
+    reasoning:
+        instructions: ->
+            | The user wants a team-wide view across owners, not just their own records.
+              Run Team_Rollup, scoped to one object if the user named one, otherwise blank for every active config.
+              Lead with the total at-risk count and how many distinct owners it's spread across.
+              Then list every owner as its own bold sub-bullet, ranked highest count first:
+              - **Jane Rep** — 9 at-risk records
+              - **John Rep** — 6 at-risk records
+              Never include record Ids or individual record names here — this is an owner-level rollup, not a record list.
+              Offer to drill into any specific owner's or object's records via a health check.
+        actions:
+            team_rollup: @actions.Team_Rollup
+            go_to_record_health: @utils.transition to @subagent.record_health
+                description: "Drill into a specific owner's or object's records when asked."
+
+    actions:
+        Team_Rollup:
+            label: "Team Rollup"
+            description: "At-risk record counts grouped by owner, across every watched object."
+            target: "flow://Sentinel_TeamRollup"
+            inputs:
+                objectApiName: string
+                    label: "Object API Name"
+                    description: "Optional. Limit to one object; blank checks every active config."
+                    is_required: False
+            outputs:
+                leaderboardJson: string
+                    label: "Leaderboard JSON"
+                    description: "List of owners with their combined at-risk counts, sorted descending."
+                    is_displayable: False
+                ownerCount: string
+                    label: "Owner Count"
+                    description: "Number of distinct owners represented."
+                    is_displayable: False
+                totalCount: string
+                    label: "Total Count"
+                    description: "Total at-risk records across all owners."
+                    is_displayable: False

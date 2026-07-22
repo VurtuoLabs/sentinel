@@ -1,0 +1,49 @@
+<template>
+    <div class="sz-root">
+        <div class="sz-header">
+            <div>
+                <div class="sz-badge">◎ SENTINEL</div>
+                <h1 class="sz-title">Snoozed Records</h1>
+                <p class="sz-subtitle">Records reps have deferred, and why — nothing gets hidden silently</p>
+            </div>
+            <button class="sz-refresh" onclick={handleRefresh} title="Refresh">
+                <lightning-icon icon-name="utility:refresh" size="x-small"></lightning-icon>
+            </button>
+        </div>
+
+        <template if:true={loading}>
+            <div class="sz-state">
+                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+            </div>
+        </template>
+
+        <template if:true={error}>
+            <div class="sz-error">
+                <lightning-icon icon-name="utility:warning" size="small" variant="error"></lightning-icon>
+                <span>{errorMessage}</span>
+            </div>
+        </template>
+
+        <template if:true={hasData}>
+            <div class="sz-grid">
+                <template for:each={rows} for:item="row">
+                    <div class="sz-card" key={row.key}>
+                        <div class="sz-card__head">
+                            <span class="sz-name">{row.displayName}</span>
+                            <span class="sz-object">{row.objectApiName}</span>
+                        </div>
+                        <p class="sz-reason">{row.reason}</p>
+                        <div class="sz-foot">
+                            <span class="sz-by">Snoozed by {row.snoozedByName}</span>
+                            <span class={row.urgentClass}>{row.daysRemaining} day(s) left</span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <template if:true={showEmpty}>
+            <div class="sz-empty">Nothing is currently snoozed.</div>
+        </template>
+    </div>
+</template>

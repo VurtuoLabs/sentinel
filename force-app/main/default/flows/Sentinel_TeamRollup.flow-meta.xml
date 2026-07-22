@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Sentinel_TeamRollup</fullName>
+    <label>Sentinel Team Rollup</label>
+    <description>Flow-fronted wrapper over SentinelTeamRollupAction. At-risk record counts grouped by owner, across every watched object — the manager leaderboard view. Holds no logic of its own.</description>
+    <processType>AutoLaunchedFlow</processType>
+    <apiVersion>65.0</apiVersion>
+    <status>Active</status>
+
+    <variables>
+        <name>objectApiName</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+
+    <variables>
+        <name>leaderboardJson</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>ownerCount</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>totalCount</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+
+    <variables>
+        <name>apexOwnerCount</name>
+        <dataType>Number</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <scale>0</scale>
+    </variables>
+    <variables>
+        <name>apexTotalCount</name>
+        <dataType>Number</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <scale>0</scale>
+    </variables>
+
+    <actionCalls>
+        <name>Run_Team_Rollup</name>
+        <label>Run Team Rollup</label>
+        <locationX>176</locationX>
+        <locationY>158</locationY>
+        <actionName>SentinelTeamRollupAction</actionName>
+        <actionType>apex</actionType>
+        <connector>
+            <targetReference>Set_Outputs</targetReference>
+        </connector>
+        <inputParameters>
+            <name>objectApiName</name>
+            <value>
+                <elementReference>objectApiName</elementReference>
+            </value>
+        </inputParameters>
+        <outputParameters>
+            <assignToReference>leaderboardJson</assignToReference>
+            <name>leaderboardJson</name>
+        </outputParameters>
+        <outputParameters>
+            <assignToReference>apexOwnerCount</assignToReference>
+            <name>ownerCount</name>
+        </outputParameters>
+        <outputParameters>
+            <assignToReference>apexTotalCount</assignToReference>
+            <name>totalCount</name>
+        </outputParameters>
+    </actionCalls>
+
+    <formulas>
+        <name>Owner_Count_As_Text</name>
+        <dataType>String</dataType>
+        <expression>TEXT({!apexOwnerCount})</expression>
+    </formulas>
+    <formulas>
+        <name>Total_Count_As_Text</name>
+        <dataType>String</dataType>
+        <expression>TEXT({!apexTotalCount})</expression>
+    </formulas>
+
+    <assignments>
+        <name>Set_Outputs</name>
+        <label>Set Outputs</label>
+        <locationX>176</locationX>
+        <locationY>278</locationY>
+        <assignmentItems>
+            <assignToReference>ownerCount</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>Owner_Count_As_Text</elementReference>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>totalCount</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>Total_Count_As_Text</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Run_Team_Rollup</targetReference>
+        </connector>
+    </start>
+</Flow>

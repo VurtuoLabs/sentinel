@@ -1,0 +1,49 @@
+<template>
+    <div class="ag-root">
+        <div class="ag-header">
+            <div>
+                <div class="ag-badge">◎ SENTINEL</div>
+                <h1 class="ag-title">Activity Gaps</h1>
+                <p class="ag-subtitle">Never contacted vs. went cold — two different problems, two different fixes</p>
+            </div>
+            <button class="ag-refresh" onclick={handleRefresh} title="Refresh">
+                <lightning-icon icon-name="utility:refresh" size="x-small"></lightning-icon>
+            </button>
+        </div>
+
+        <template if:true={loading}>
+            <div class="ag-state">
+                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+            </div>
+        </template>
+
+        <template if:true={error}>
+            <div class="ag-error">
+                <lightning-icon icon-name="utility:warning" size="small" variant="error"></lightning-icon>
+                <span>{errorMessage}</span>
+            </div>
+        </template>
+
+        <template if:true={hasData}>
+            <div class="ag-grid">
+                <template for:each={rows} for:item="row">
+                    <div class="ag-card" key={row.key}>
+                        <span class="ag-card__label">{row.label}</span>
+                        <div class="ag-bar">
+                            <div class="ag-seg ag-seg--never" style={row.neverStyle}></div>
+                            <div class="ag-seg ag-seg--cold" style={row.coldStyle}></div>
+                        </div>
+                        <div class="ag-legend">
+                            <span class="ag-chip ag-chip--never">Never contacted: {row.neverContactedCount}</span>
+                            <span class="ag-chip ag-chip--cold">Went cold: {row.wentColdCount}</span>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <template if:true={showEmpty}>
+            <div class="ag-empty">No active configs returned at-risk records.</div>
+        </template>
+    </div>
+</template>

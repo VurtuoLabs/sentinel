@@ -1,0 +1,59 @@
+<template>
+    <div class="tr-root">
+        <div class="tr-header">
+            <div>
+                <div class="tr-badge">◎ SENTINEL</div>
+                <h1 class="tr-title">Trends</h1>
+                <p class="tr-subtitle">At-risk and Critical counts over time, per watched object</p>
+            </div>
+            <button class="tr-refresh" onclick={handleRefresh} title="Refresh">
+                <lightning-icon icon-name="utility:refresh" size="x-small"></lightning-icon>
+            </button>
+        </div>
+
+        <template if:true={loading}>
+            <div class="tr-state">
+                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+            </div>
+        </template>
+
+        <template if:true={error}>
+            <div class="tr-error">
+                <lightning-icon icon-name="utility:warning" size="small" variant="error"></lightning-icon>
+                <span>{errorMessage}</span>
+            </div>
+        </template>
+
+        <template if:true={hasData}>
+            <div class="tr-grid">
+                <template for:each={rows} for:item="row">
+                    <div class="tr-card" key={row.key}>
+                        <div class="tr-card__head">
+                            <span class="tr-card__label">{row.label}</span>
+                        </div>
+                        <template if:true={row.hasEnough}>
+                            <svg class="tr-chart" viewBox="0 0 300 100" preserveAspectRatio="none">
+                                <polyline class="tr-line tr-line--stale" points={row.staleLine}></polyline>
+                                <polyline class="tr-line tr-line--critical" points={row.criticalLine}></polyline>
+                            </svg>
+                            <div class="tr-legend">
+                                <span class="tr-chip tr-chip--stale">At-risk: {row.latestStale}</span>
+                                <span class="tr-chip tr-chip--critical">Critical: {row.latestCritical}</span>
+                            </div>
+                        </template>
+                        <template if:false={row.hasEnough}>
+                            <div class="tr-nodata">
+                                <span class="tr-nodata__num">{row.latestStale}</span>
+                                <span class="tr-nodata__label">at-risk today — trend line builds up after a few daily runs</span>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <template if:true={showEmpty}>
+            <div class="tr-empty">No snapshot history yet — the daily monitor needs to run at least once.</div>
+        </template>
+    </div>
+</template>

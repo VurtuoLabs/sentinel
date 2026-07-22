@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Sentinel_Snooze</fullName>
+    <label>Sentinel Snooze</label>
+    <description>Flow-fronted wrapper over SentinelSnoozeAction. Snoozes a comma-separated list of record Ids until a future date so they stop surfacing as at-risk. Holds no logic of its own.</description>
+    <processType>AutoLaunchedFlow</processType>
+    <apiVersion>65.0</apiVersion>
+    <status>Active</status>
+
+    <!-- Inputs -->
+    <variables>
+        <name>recordIds</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>snoozeDays</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+    <variables>
+        <name>reason</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
+    </variables>
+
+    <!-- Outputs -->
+    <variables>
+        <name>snoozedCount</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>message</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+
+    <!-- Private -->
+    <variables>
+        <name>apexSnoozedCount</name>
+        <dataType>Number</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <scale>0</scale>
+    </variables>
+
+    <formulas>
+        <name>Snooze_Days_Number</name>
+        <dataType>Number</dataType>
+        <scale>0</scale>
+        <expression>IF(ISBLANK({!snoozeDays}), 7, VALUE({!snoozeDays}))</expression>
+    </formulas>
+    <formulas>
+        <name>Snoozed_As_Text</name>
+        <dataType>String</dataType>
+        <expression>TEXT({!apexSnoozedCount})</expression>
+    </formulas>
+
+    <actionCalls>
+        <name>Run_Snooze</name>
+        <label>Run Snooze</label>
+        <locationX>176</locationX>
+        <locationY>158</locationY>
+        <actionName>SentinelSnoozeAction</actionName>
+        <actionType>apex</actionType>
+        <connector>
+            <targetReference>Set_Outputs</targetReference>
+        </connector>
+        <inputParameters>
+            <name>recordIds</name>
+            <value>
+                <elementReference>recordIds</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>snoozeDays</name>
+            <value>
+                <elementReference>Snooze_Days_Number</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>reason</name>
+            <value>
+                <elementReference>reason</elementReference>
+            </value>
+        </inputParameters>
+        <outputParameters>
+            <assignToReference>message</assignToReference>
+            <name>message</name>
+        </outputParameters>
+        <outputParameters>
+            <assignToReference>apexSnoozedCount</assignToReference>
+            <name>snoozedCount</name>
+        </outputParameters>
+    </actionCalls>
+
+    <assignments>
+        <name>Set_Outputs</name>
+        <label>Set Outputs</label>
+        <locationX>176</locationX>
+        <locationY>278</locationY>
+        <assignmentItems>
+            <assignToReference>snoozedCount</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>Snoozed_As_Text</elementReference>
+            </value>
+        </assignmentItems>
+    </assignments>
+
+    <start>
+        <locationX>50</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Run_Snooze</targetReference>
+        </connector>
+    </start>
+</Flow>

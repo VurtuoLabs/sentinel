@@ -1,0 +1,45 @@
+<template>
+    <div class="st-root">
+        <div class="st-header">
+            <div>
+                <div class="st-badge">◎ SENTINEL</div>
+                <h1 class="st-title">Single-Threaded Deals</h1>
+                <p class="st-subtitle">At-risk Opportunities with only one contact role — a relationship risk, not just a staleness risk</p>
+            </div>
+            <button class="st-refresh" onclick={handleRefresh} title="Refresh">
+                <lightning-icon icon-name="utility:refresh" size="x-small"></lightning-icon>
+            </button>
+        </div>
+
+        <template if:true={loading}>
+            <div class="st-state">
+                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+            </div>
+        </template>
+
+        <template if:true={error}>
+            <div class="st-error">
+                <lightning-icon icon-name="utility:warning" size="small" variant="error"></lightning-icon>
+                <span>{errorMessage}</span>
+            </div>
+        </template>
+
+        <template if:true={hasData}>
+            <div class="st-card">
+                <template for:each={rows} for:item="row">
+                    <a class="st-row" href={row.url} key={row.key}>
+                        <span class="st-name">{row.name}</span>
+                        <span class="st-owner">{row.owner}</span>
+                        <span class="st-stage">{row.stage}</span>
+                        <span class={row.bandClass}>{row.band}</span>
+                        <span class="st-amount">{row.amountFormatted}</span>
+                    </a>
+                </template>
+            </div>
+        </template>
+
+        <template if:true={showEmpty}>
+            <div class="st-empty">No single-threaded at-risk Opportunities — nice work keeping relationships broad.</div>
+        </template>
+    </div>
+</template>
