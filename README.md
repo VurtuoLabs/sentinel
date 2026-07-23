@@ -161,4 +161,4 @@ force-app/main/default/
 
 ## License
 
-[MIT](LICENSE) © 2026 Alex Imperiale
+[MIT](LICENSE) © 2026 VurtuoLabs
